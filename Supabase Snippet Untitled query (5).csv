@@ -1,0 +1,2 @@
+indexname,index_definition
+point_transactions_daily_task_once_idx,"CREATE UNIQUE INDEX point_transactions_daily_task_once_idx ON public.point_transactions USING btree (source_type, source_id) WHERE ((source_type = 'daily_task'::text) AND (source_id IS NOT NULL))"
