@@ -2,10 +2,13 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabase";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -14,21 +17,23 @@ export default function LoginPage() {
     setLoading(true);
     setMessage("");
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/login`,
-        shouldCreateUser: false,
-      },
-    });
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
 
-    if (error) {
-      setMessage("登入失敗：" + error.message);
-    } else {
-      setMessage("登入連結已寄出，請到 Email 信箱查看！");
+      if (error) {
+        setMessage("登入失敗：" + error.message);
+      } else {
+        router.push("/");
+        router.refresh();
+      }
+    } catch {
+      setMessage("連線失敗，請稍後再試。");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }
 
   return (
@@ -36,65 +41,75 @@ export default function LoginPage() {
       minHeight: "100vh",
       background: "#e9f5f1",
       display: "flex",
-      alignItems: "center",
       justifyContent: "center",
+      alignItems: "center",
       padding: 20,
-      fontFamily: "Arial, sans-serif",
+      fontFamily: "Arial, sans-serif"
     }}>
-      <section style={{
+      <form onSubmit={handleLogin} style={{
         background: "white",
         padding: 36,
-        borderRadius: 24,
-        maxWidth: 420,
+        borderRadius: 28,
+        maxWidth: 440,
         width: "100%",
-        textAlign: "center",
+        textAlign: "center"
       }}>
         <h1 style={{ color: "#236b60" }}>
           🎮 TOBY 時間大作戰
         </h1>
 
         <h2>🔐 家長登入</h2>
+        <p>請輸入 Email 與密碼</p>
 
-        <p>輸入已在 Supabase 建立的家長 Email</p>
+        <input
+          type="email"
+          placeholder="家長 Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          autoComplete="email"
+          style={inputStyle}
+        />
 
-        <form onSubmit={handleLogin}>
-          <input
-            type="email"
-            placeholder="家長 Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            style={{
-              width: "100%",
-              padding: 14,
-              border: "1px solid #ccc",
-              borderRadius: 10,
-              marginBottom: 16,
-              boxSizing: "border-box",
-            }}
-          />
+        <input
+          type="password"
+          placeholder="密碼"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          autoComplete="current-password"
+          style={inputStyle}
+        />
 
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              width: "100%",
-              padding: 14,
-              background: "#236b60",
-              color: "white",
-              border: "none",
-              borderRadius: 10,
-              cursor: "pointer",
-            }}
-          >
-            {loading ? "寄送中..." : "寄送登入連結"}
-          </button>
-        </form>
+        <button type="submit" disabled={loading} style={{
+          width: "100%",
+          padding: 16,
+          border: 0,
+          borderRadius: 12,
+          background: "#236b60",
+          color: "white",
+          fontSize: 18,
+          cursor: "pointer"
+        }}>
+          {loading ? "登入中..." : "登入"}
+        </button>
 
-        <p role="status" style={{ color: "#238b78" }}>
-          {message}
-        </p>
-      </section>
+        {message && (
+          <p role="alert" style={{ color: "#b42318" }}>
+            {message}
+          </p>
+        )}
+      </form>
     </main>
   );
 }
+
+const inputStyle: React.CSSProperties = {
+  width: "100%",
+  boxSizing: "border-box",
+  padding: 14,
+  marginBottom: 16,
+  border: "1px solid #ccd6d3",
+  borderRadius: 12,
+  fontSize: 16
+};
